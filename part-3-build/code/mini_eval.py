@@ -127,7 +127,7 @@ def status_of(response) -> str:
     if response.stop_reason == "refusal":
         return "refusal"        # a real, graded outcome (tracked separately)
     if response.stop_reason == "max_tokens":
-        return "truncated"      # cut off: shown, but left out of averages
+        return "truncated"      # cut off: shown, left out of averages, rate reported next to the score
     return "ok"
 
 
@@ -449,12 +449,21 @@ def cmd_run(cfg):
 # PART 5: METRICS. Turn many rows into numbers you can trust (or know not to).
 # ---------------------------------------------------------------------------
 def per_sample_scores(rows: list[dict]) -> dict[str, list[float]]:
-    """Group scores by sample. Truncated answers are left out, not counted as wrong."""
+    """Group scores by sample. Truncated answers are left out, not counted as wrong.
+    Leaving them out can inflate the score (truncation tends to hit the hardest questions),
+    so every report prints the truncation rate next to the score: see truncation_note()."""
     by_sample = defaultdict(list)
     for r in rows:
         if r["status"] != "truncated":
             by_sample[r["id"]].append(r["score"])
     return by_sample
+
+
+def truncation_note(rows: list[dict]) -> str:
+    """How many trials were cut off by max_tokens and left out of the score."""
+    truncated = sum(r["status"] == "truncated" for r in rows)
+    rate = truncated / len(rows) if rows else 0.0
+    return f"truncated: {truncated}/{len(rows)} trials ({rate:.1%}) excluded"
 
 
 def mean_and_ci(values: list[float]) -> tuple[float, float]:
@@ -500,7 +509,12 @@ def build_report(out: Path) -> str:
              f"- Dataset: `{config['dataset']}` (sha {config['dataset_sha']}), solver `{config['solver']}`, "
              f"model `{config['model']}` (effort {config['effort']}), reps {config['reps']}",
              f"- Trials scored: {len(rows)} · statuses: {dict(counts)} · harness errors: {len(errors)}", "",
-             f"## Headline: **{score:.1%} ± {ci:.1%}** (95% CI, {len(sample_means)} samples)", ""]
+             f"## Headline: **{score:.1%} ± {ci:.1%}** (95% CI, {len(sample_means)} samples) · {truncation_note(rows)}",
+             ""]
+    if counts.get("truncated"):
+        lines += ["⚠️ Truncated trials are left out of the score above. Truncation tends to hit the hardest "
+                  "questions, so leaving them out can make the score look higher than it really is. "
+                  "Raise --max-tokens and re-run them before trusting this number.", ""]
 
     # pass@k / pass^k need binary outcomes and a fixed number of tries per sample.
     binary = all(r["score"] in (0.0, 1.0) for r in rows)
@@ -540,15 +554,17 @@ def build_report(out: Path) -> str:
 
 def cmd_compare(a_dir: str, b_dir: str):
     """Paired comparison: same samples, two systems. Is B really better than A?"""
-    a = {k: mean(v) for k, v in per_sample_scores(read_jsonl(Path(a_dir) / "results.jsonl")).items() if v}
-    b = {k: mean(v) for k, v in per_sample_scores(read_jsonl(Path(b_dir) / "results.jsonl")).items() if v}
+    a_rows, b_rows = read_jsonl(Path(a_dir) / "results.jsonl"), read_jsonl(Path(b_dir) / "results.jsonl")
+    a = {k: mean(v) for k, v in per_sample_scores(a_rows).items() if v}
+    b = {k: mean(v) for k, v in per_sample_scores(b_rows).items() if v}
     shared = sorted(a.keys() & b.keys())
     if len(shared) < 2:
         sys.exit("need at least 2 samples in common")
     diffs = [b[k] - a[k] for k in shared]
     d, h = mean_and_ci(diffs)
     print(f"A: {Path(a_dir).name}\nB: {Path(b_dir).name}\nShared samples: {len(shared)}")
-    print(f"A score {mean(a[k] for k in shared):.1%} · B score {mean(b[k] for k in shared):.1%}")
+    print(f"A score {mean(a[k] for k in shared):.1%} ({truncation_note(a_rows)}) · "
+          f"B score {mean(b[k] for k in shared):.1%} ({truncation_note(b_rows)})")
     print(f"Difference B − A: {d:+.1%} ± {h:.1%} (95% CI)")
     if abs(d) <= h:
         print("→ The interval includes 0: this difference could just be noise.")

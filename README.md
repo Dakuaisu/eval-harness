@@ -1,5 +1,7 @@
 # Eval Harness: How to Measure AI, From Zero
 
+Written with Claude as a study guide.
+
 This guide teaches you how to build an **evaluation harness**: the software that tests AI models and AI agents and tells you, with numbers you can trust, how good they are. It starts from the basics, uses plain English, and has diagrams everywhere.
 
 It's the companion to **[harness-learning](https://github.com/Dakuaisu/harness-learning)**, which teaches *agent* harnesses (the software that lets an AI *do* things). This guide teaches the software that *grades* them.

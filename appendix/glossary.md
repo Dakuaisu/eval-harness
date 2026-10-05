@@ -62,7 +62,7 @@ Every term from the guide, in plain English. The chapter where it's explained is
 | **Status** | A trial's outcome type: ok, truncated, refusal, step_limit. [6, 9] |
 | **Structured outputs** | An API feature guaranteeing the reply matches a JSON schema. [6, 7] |
 | **Transcript / trajectory / trace** | The full record of a trial: messages, tool calls, results. [6] |
-| **Truncated** | An answer cut off by `max_tokens`. Shown, but excluded from averages. [6, 8] |
+| **Truncated** | An answer cut off by `max_tokens`. Shown, but excluded from averages. Because the hardest questions get cut off most, excluding them can inflate the score, so reports print the truncation rate next to it. [6, 8] |
 | **Vibe check** | Trying a few examples by hand. Not an eval! [1] |
 
 [← Contents](../README.md)

@@ -101,10 +101,20 @@ Every trial should record a **status**, because not every response is a normal a
 flowchart TD
     R["Response arrives"] --> Q{"stop_reason?"}
     Q -->|"end_turn"| OK["status: ok<br/>→ grade it"]
-    Q -->|"max_tokens"| TR["status: truncated<br/>→ show it, but leave it OUT of the average<br/>(it was cut off, not wrong)"]
+    Q -->|"max_tokens"| TR["status: truncated<br/>→ show it, but leave it OUT of the average<br/>(it was cut off, not wrong)<br/>→ report the truncation rate next to the score"]
     Q -->|"refusal"| RF["status: refusal<br/>→ grade it (usually 0), but COUNT refusals separately"]
     X["No response at all:<br/>timeout, API error"] --> ER["→ errors.jsonl, NOT a score<br/>(Chapter 9)"]
 ```
+
+### ⚠️ Leaving truncated answers out can inflate the score
+
+Truncated answers are **excluded** from the score, because a cut-off answer tells you about your `max_tokens` setting, not about whether the model was right. But excluding them has a cost, and you need to know about it:
+
+- **Truncation isn't random.** Answers get cut off when they run long, and they run long on the **hardest** questions, where the model needs the most reasoning or code. Dropping those trials leaves an **easier set** behind, so the average over what's left looks better than the model really is.
+- **A question can vanish completely.** If every rep of a question is truncated, that question isn't in the headline at all. Your "12-question eval" quietly becomes an 11-question eval, minus its hardest question.
+- **Your users don't get that excuse.** In production, a cut-off answer is a failed answer.
+
+So whenever truncated answers are excluded, **print the truncation rate right next to the score**, for example `78% ± 4% · truncated: 3/120 trials (2.5%) excluded`. The Part 3 harness does this in every report and in `compare`. A rate of zero means the exclusion changed nothing. If it's more than a few percent, raise `max_tokens` and re-run those trials before trusting the number.
 
 This is how you avoid blaming the model for your harness's problems, and still notice real ones (like a model refusing too often).
 
@@ -158,7 +168,7 @@ Save the **full transcript** of every trial: every message, tool call, tool resu
 - **Evaluate what you ship**: same prompt, tools, model and settings as production.
 - Record every setting. **Check the served model** on every response.
 - Ask for a **gradable answer format** and extract it forgivingly.
-- Give every trial a **status**: ok, truncated (excluded), refusal (counted separately), or error (not a score).
+- Give every trial a **status**: ok, truncated (excluded, which can inflate the score, so report the truncation rate next to it), refusal (counted separately), or error (not a score).
 - Agent solvers add **sandboxes, limits, and scaffold effects**. Save **full transcripts**.
 
 [← Chapter 5](05-datasets-and-tasks.md) · [Contents](../README.md) · Next: [Chapter 7: Graders →](07-graders.md)

@@ -78,7 +78,7 @@ flowchart TD
 | Normal answer | results | ✅ yes |
 | Refused | results (status `refusal`) | ✅ yes, and also counted separately |
 | Agent hit the step limit | results (status `step_limit`) | ✅ yes: it failed the task |
-| Cut off by `max_tokens` | results (status `truncated`) | ❌ excluded; fix your settings |
+| Cut off by `max_tokens` | results (status `truncated`) | ❌ excluded, which can inflate the score (truncation hits the hardest questions), so the report prints the truncation rate next to it; fix your settings |
 | API error after all retries | errors | ❌ no |
 | Trial timed out | errors | ❌ no |
 | Wrong model served | errors | ❌ no |

@@ -28,13 +28,19 @@ score, ci = mean_and_ci(sample_means)                    # mean ± 1.96 × SE
 
 > 🔑 **Key idea:** The unit of evidence is the **sample** (the question), not the trial. Average reps within a sample first, then compute the error bar across samples.
 
+The filter step **excludes truncated trials** (`per_sample_scores()` drops them). That can **inflate** the headline: truncation tends to hit the hardest questions, so leaving those trials out averages over an easier set ([Chapter 6.5](06-solvers.md) explains this in full). That's why the report prints the truncation rate right next to the score:
+
+```
+## Headline: 78.0% ± 4.1% (95% CI, 120 samples) · truncated: 3/360 trials (0.8%) excluded
+```
+
 ---
 
 ## 8.2 The report every eval should produce
 
 | Section | Why |
 |---------|-----|
-| **Headline ± CI**, with sample count | The main answer, with honesty about uncertainty |
+| **Headline ± CI**, with sample count and **truncation rate** | The main answer, with honesty about uncertainty, and about how many cut-off trials were left out (which can inflate it) |
 | **What was run**: model, settings, dataset version, reps | So readers know what the number means |
 | **Status counts**: ok / truncated / refusal / errors | Tells you whether plumbing problems affected the run |
 | **Per-category breakdown** | "Great at maths, bad at code" is more useful than one average |
@@ -110,7 +116,7 @@ Part 3's `compare` command does this (illustrative numbers):
 ```
 $ python mini_eval.py compare runs/prompt_v1 runs/prompt_v2
 Shared samples: 100
-A score 71.0% · B score 76.5%
+A score 71.0% (truncated: 0/200 trials (0.0%) excluded) · B score 76.5% (truncated: 1/200 trials (0.5%) excluded)
 Difference B − A: +5.5% ± 3.9% (95% CI)
 → B is better, and the difference is bigger than the noise.
 ```
@@ -155,6 +161,7 @@ quadrantChart
 |---------|---------------|-----|
 | Counting timeouts/API errors as 0 | Blames the model for plumbing | Keep errors in a separate file; report the count |
 | Counting truncated answers as wrong | They were cut off, not wrong | Mark as `truncated`, exclude from the mean, fix `max_tokens` |
+| Excluding truncated answers silently | Truncation hits the hardest questions, so excluding them inflates the score | Print the truncation rate next to the score; re-run if it's more than a few % |
 | Treating reps as independent samples | Makes error bars look far too small | Average within sample first |
 | Reporting only the mean | Hides uncertainty | Always give the CI and the sample count |
 | One blended score for everything | Hides what's actually failing | Per-category and per-criterion breakdowns |

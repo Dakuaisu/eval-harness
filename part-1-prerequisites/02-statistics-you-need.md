@@ -202,7 +202,19 @@ For yes/no detection tasks, use a **confusion matrix**:
 
 **Trap 1: Trying many things and reporting the best.** If you try 20 prompt variants, one of them will look better *by luck alone*. Fix: keep a separate **held-out test set** that you only check at the end (Chapter 5).
 
-**Trap 2: Chasing tiny differences.** A "+1%" improvement on a 100-question eval is noise. Decide the **smallest improvement you'd actually care about** *before* running, and make sure your eval is big enough to see it. A rough guide for pass rates: the error bar on a paired difference is about **1/√(n × reps)**. So 100 questions × 2 reps ≈ ±7 points.
+**Trap 2: Chasing tiny differences.** A "+1%" improvement on a 100-question eval is noise. Decide the **smallest improvement you'd actually care about** *before* running, and make sure your eval is big enough to see it.
+
+To size the eval, remember 2.6: **the question is the unit of evidence, not the trial.** Repeated runs of the same question aren't independent. A question that's hard for a model tends to be hard on every rep. So you can't multiply questions by reps as if every trial were a new question. Work out a paired difference the way Part 3's `compare` command does:
+
+1. For A and for B, average the reps **within** each question.
+2. Take the difference B − A for each question.
+3. Error bar ≈ 1.96 × SD(those differences) / √(number of questions).
+
+Reps make each question's difference less noisy, which can shrink the SD a little. But they can't remove real differences between questions, and they don't touch the √(number of questions) underneath. **The number of questions sets the error bar.**
+
+Worked example: 100 questions, one rep each. B beats A on 12 questions, loses on 6, and ties on the other 82. The differences are twelve +1s, six −1s and 82 zeros: mean +6%, SD ≈ 0.42, error bar ≈ 1.96 × 0.42 / √100 ≈ ±8 points. **+6% ± 8%: you can't tell.**
+- **Run 3 reps instead of 1:** if those questions keep going the same way, the per-question differences barely change, and it's still about ±8 points.
+- **Use 400 similar questions instead** (B wins 48, loses 24): ±4 points. **+6% ± 4%** is now a real difference.
 
 ## 🧪 Try it
 

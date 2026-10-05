@@ -19,7 +19,7 @@ flowchart LR
 4. **Fresh world per trial**: no leftover state.
 5. **Grade outcomes, not paths**; for agents, **grade the end state**.
 6. **Errors aren't wrong answers**: plumbing failures go in `errors.jsonl`.
-7. **Truncated isn't wrong**: excluded from averages; fix `max_tokens`.
+7. **Truncated isn't wrong**: excluded from averages, but that can inflate the score (the hardest questions get cut off most), so print the truncation rate next to it; fix `max_tokens`.
 8. **Always show error bars**: mean ± 95% CI, over samples, with reps averaged first.
 9. **Compare paired**: same samples; if the CI of the difference includes 0, you can't tell.
 10. **Read the transcripts**: failures *and* successes.
@@ -51,7 +51,7 @@ precision = TP/(TP+FP)   recall = TP/(TP+FN)
 | ok | ✅ | ✅ |
 | refusal | ✅ | ✅ (and counted separately) |
 | step_limit | ✅ | ✅ (a failure) |
-| truncated | ✅ | ❌ |
+| truncated | ✅ | ❌ (can inflate the score: report the truncation rate next to it) |
 | api_error / timeout / model_mismatch / harness_error | ❌ errors.jsonl | ❌ |
 
 ## A good dataset is...

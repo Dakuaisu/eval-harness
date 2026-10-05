@@ -58,7 +58,7 @@ python mini_eval.py run datasets/agent_tasks.jsonl --solver null
 Real output from the null run on the agent tasks:
 
 ```text
-## Headline: **0.0% ± 0.0%** (95% CI, 3 samples)
+## Headline: **0.0% ± 0.0%** (95% CI, 3 samples) · truncated: 0/3 trials (0.0%) excluded
 
 ## Failed or partial trials
 
@@ -186,7 +186,7 @@ Try the resume: start a run with `--name myrun`, press Ctrl+C halfway, run the s
 
 ## 13.7 Part 5: Metrics and report
 
-- `per_sample_scores()` groups by sample and **drops truncated** trials.
+- `per_sample_scores()` groups by sample and **drops truncated** trials. That can inflate the score, because the hardest questions are the ones most likely to be cut off ([Chapter 6.5](../part-2-eval-harness/06-solvers.md)). So `truncation_note()` puts the truncation rate right next to the headline, and next to each run's score in `compare`. If any trial was truncated, the report also adds a warning to raise `--max-tokens` and re-run.
 - `mean_and_ci()`: mean ± 1.96 × SE, across **samples** (reps are averaged first).
 - `pass_at_k()` and `pass_hat_k()`: the exact formulas from Chapter 8, checked against hand calculations in the tests.
 - `cost_usd()`: tokens × price, for the model **and** the judge. (Prices are in `PRICES` at the top of the file; check them against the provider's pricing page.)
@@ -201,7 +201,7 @@ A report from a real run looks like this (illustrative numbers):
 - Dataset: `datasets/basics.jsonl` (sha b681e4aae8c1), solver `chat`, model `claude-opus-5-5` (effort medium), reps 3
 - Trials scored: 36 · statuses: {'ok': 36} · harness errors: 0
 
-## Headline: **91.7% ± 11.7%** (95% CI, 12 samples)
+## Headline: **91.7% ± 11.7%** (95% CI, 12 samples) · truncated: 0/36 trials (0.0%) excluded
 
 ## Reliability
 | k | pass@k (any of k succeeds) | pass^k (all k succeed) |
@@ -225,7 +225,7 @@ Notice the **± 11.7%**. With only 12 samples, the error bar is big. That's the 
 | exact/numeric accept equivalent forms, reject wrong ones | graders are neither too strict nor too lenient |
 | python_tests passes good code, fails bad code | execution grading works |
 | pass@k / pass^k match hand calculations | the maths is right |
-| truncated trials are excluded | cut-off ≠ wrong |
+| truncated trials are excluded | cut-off ≠ wrong (the report shows the truncation rate, since excluding them can inflate the score) |
 | a run resumes without calling the model again | resume works; no double spending |
 | a wrong served model goes to errors, not results | plumbing ≠ performance |
 | an agent that **writes the file** passes; an agent that only **claims** it did fails | end-state grading works |
